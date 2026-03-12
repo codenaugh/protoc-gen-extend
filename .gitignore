@@ -1,0 +1,5 @@
+# Binary
+protoc-gen-methods
+
+# Generated protobuf output
+example/userpb/*.pb.go
