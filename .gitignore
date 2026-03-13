@@ -1,5 +1,5 @@
 # Binary
-protoc-gen-methods
+protoc-gen-extend
 
 # Generated protobuf output
 example/userpb/*.pb.go

@@ -1,4 +1,4 @@
-module github.com/codenaugh/protoc-gen-methods
+module github.com/codenaugh/protoc-gen-extend
 
 go 1.25.0
 
