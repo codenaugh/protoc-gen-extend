@@ -1,21 +1,21 @@
 # protoc-gen-extend
 
-A protoc plugin that lets you define custom methods, constants, and constructors on generated protobuf types using sidecar Go files — no type aliasing or wrapper structs required.
+A protoc plugin that lets you extend generated protobuf types with custom Go code using sidecar files — no type aliasing or wrapper structs required.
 
 ## The Problem
 
 In Go, you can't add methods to types defined in other packages. If `protoc-gen-go` generates a `User` struct in `userpb`, you're stuck with workarounds like:
 
 ```go
-// Wrapper type just to add a method
-type User struct {
-    *userpb.User
-}
+// Type definition just to add behavior
+type User userpb.User
 
 func (u *User) FullName() string {
     return u.FirstName + " " + u.LastName
 }
 ```
+
+This breaks type compatibility and requires casts everywhere the original type is used.
 
 ## The Solution
 
@@ -44,11 +44,8 @@ func (m *User) FullName() string {
     return strings.TrimSpace(m.FirstName + " " + m.LastName)
 }
 
-func (m *User) PrimaryEmail() (string, bool) {
-    if len(m.Emails) == 0 {
-        return "", false
-    }
-    return m.Emails[0], true
+func NewUser(first, last string) *User {
+    return &User{FirstName: first, LastName: last}
 }
 ```
 

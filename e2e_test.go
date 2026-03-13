@@ -34,7 +34,7 @@ func TestEndToEnd(t *testing.T) {
 		wantErr     string
 	}{
 		{
-			name: "basic methods",
+			name: "basic extensions",
 			proto: `
 syntax = "proto3";
 package test;

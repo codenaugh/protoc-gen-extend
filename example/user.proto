@@ -1,7 +1,7 @@
 syntax = "proto3";
 package example;
 
-option go_package = "github.com/codenaugh/protoc-gen-methods/example/userpb";
+option go_package = "github.com/codenaugh/protoc-gen-extend/example/userpb";
 
 message User {
   string first_name = 1;
