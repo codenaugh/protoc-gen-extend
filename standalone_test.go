@@ -180,8 +180,8 @@ func TestStandaloneNoSidecarsIsNoop(t *testing.T) {
 func TestStandaloneTestSidecar(t *testing.T) {
 	t.Parallel()
 	root := writeTree(t, map[string]string{
-		"protos/user/user.proto":             standaloneProto,
-		"protos/user/user.proto.ext.go":      standaloneSidecar,
+		"protos/user/user.proto":        standaloneProto,
+		"protos/user/user.proto.ext.go": standaloneSidecar,
 		"protos/user/user.proto.ext_test.go": `//go:build ignore
 
 package testpb
