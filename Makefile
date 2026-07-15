@@ -31,3 +31,6 @@ example: proto
 clean:
 	rm -f protoc-gen-extend
 	rm -rf example/userpb/*.pb.go
+
+standalone:
+	go run . generate -sidecar_root example -out example/userpb -paths_source_relative

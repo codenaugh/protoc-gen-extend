@@ -51,15 +51,37 @@ func NewUser(first, last string) *User {
 
 `protoc-gen-extend` picks up the sidecar, validates that all receiver types are messages in the proto file, and emits the code into the generated output package. Methods, constants, constructors, and variables land directly alongside the generated types.
 
-## Install
+## Usage: standalone (recommended)
+
+No install, no PATH setup — `go run` resolves, caches, and pins the version inline:
+
+```bash
+go run github.com/codenaugh/protoc-gen-extend@latest generate \
+  -sidecar_root proto \
+  -out gen \
+  -paths_source_relative
+```
+
+Standalone mode parses the `.proto` files directly (syntax only — no
+import resolution needed), so it runs before, after, or parallel to
+your normal codegen, under any driver (protoc scripts, buf, make).
+Protos without sidecars are skipped, so it's a fast no-op scan for
+most of the tree.
+
+### generate flags
+
+| Flag | Description |
+|---|---|
+| `-sidecar_root` | Root directory to walk for `.proto.ext.go` sidecar files (default `.`). |
+| `-out` | Output root directory (required). |
+| `-module` | Module prefix stripped from each proto's `go_package` to compute the output path. Mirrors protoc-gen-go's `module=` option. |
+| `-paths_source_relative` | Place output next to the proto's own path relative to `-out`. Mirrors `paths=source_relative`. Exactly one of `-module`/`-paths_source_relative` is required. |
+
+## Usage: as a protoc plugin
 
 ```bash
 go install github.com/codenaugh/protoc-gen-extend@latest
-```
 
-## Usage
-
-```bash
 protoc \
   --proto_path=proto \
   --go_out=gen \
@@ -68,6 +90,10 @@ protoc \
   --extend_opt=paths=source_relative \
   proto/user.proto
 ```
+
+Note: protoc discovers plugins via PATH, so the installed binary's
+directory (`$GOBIN` or `$GOPATH/bin`) must be on PATH, or pass
+`--plugin=protoc-gen-extend=/path/to/binary` explicitly.
 
 ### Options
 
@@ -81,7 +107,7 @@ protoc \
 - Must have a `//go:build ignore` tag so it's not compiled in place
 - Package name is rewritten to match the generated output
 - Receiver types are validated against messages in the proto file
-- Imports are carried through to the generated output
+- Imports and doc comments are carried through to the generated output
 - Supports methods, constants, variables, type declarations, and standalone functions
 
 ## Validation
