@@ -176,3 +176,58 @@ func TestStandaloneNoSidecarsIsNoop(t *testing.T) {
 		t.Error("out dir should not be created when nothing is generated")
 	}
 }
+
+func TestStandaloneTestSidecar(t *testing.T) {
+	t.Parallel()
+	root := writeTree(t, map[string]string{
+		"protos/user/user.proto":             standaloneProto,
+		"protos/user/user.proto.ext.go":      standaloneSidecar,
+		"protos/user/user.proto.ext_test.go": `//go:build ignore
+
+package testpb
+
+import "testing"
+
+// TestFullName exercises the generated extension method.
+func TestFullName(t *testing.T) {
+	u := &User{FirstName: " a "}
+	if u.FullName() != "a" {
+		t.Fatal("trim failed")
+	}
+}
+`,
+	})
+	out := filepath.Join(root, "out")
+
+	if err := runGenerate([]string{
+		"-sidecar_root", filepath.Join(root, "protos"),
+		"-out", out,
+		"-module", "example.com/mod",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(out, "gen", "testpb", "user_ext.pb_test.go"))
+	if err != nil {
+		t.Fatalf("test sidecar output missing: %v", err)
+	}
+	for _, want := range []string{
+		"package testpb",
+		"func TestFullName(t *testing.T)",
+		"// TestFullName exercises the generated extension method.",
+		`"testing"`,
+	} {
+		if !strings.Contains(string(got), want) {
+			t.Errorf("test output missing %q\n---\n%s", want, got)
+		}
+	}
+
+	// The production output must not absorb the test content.
+	prod, err := os.ReadFile(filepath.Join(out, "gen", "testpb", "user_ext.pb.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(prod), "testing") {
+		t.Error("production ext file must not import testing")
+	}
+}

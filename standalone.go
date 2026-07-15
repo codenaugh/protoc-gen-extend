@@ -48,7 +48,7 @@ func runGenerate(args []string) error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.HasSuffix(d.Name(), ".proto.ext.go") {
+		if !d.IsDir() && (strings.HasSuffix(d.Name(), ".proto.ext.go") || strings.HasSuffix(d.Name(), ".proto.ext_test.go")) {
 			sidecars = append(sidecars, p)
 		}
 		return nil
@@ -67,7 +67,12 @@ func runGenerate(args []string) error {
 
 // generateStandalone processes one sidecar file against its proto.
 func generateStandalone(sidecarPath, sidecarRoot, out, module string, sourceRelative bool) error {
-	protoPath := strings.TrimSuffix(sidecarPath, ".ext.go")
+	isTest := strings.HasSuffix(sidecarPath, ".proto.ext_test.go")
+	suffix := ".ext.go"
+	if isTest {
+		suffix = ".ext_test.go"
+	}
+	protoPath := strings.TrimSuffix(sidecarPath, suffix)
 	if _, err := os.Stat(protoPath); err != nil {
 		return fmt.Errorf("generate: sidecar %s has no matching proto file %s", sidecarPath, filepath.Base(protoPath))
 	}
@@ -106,7 +111,13 @@ func generateStandalone(sidecarPath, sidecarRoot, out, module string, sourceRela
 	}
 
 	base := strings.TrimSuffix(filepath.Base(protoPath), ".proto")
-	outPath := filepath.Join(outDir, base+"_ext.pb.go")
+	outName := base + "_ext.pb.go"
+	if isTest {
+		// Test sidecars emit as _test files so `go test` picks them up
+		// in the generated package.
+		outName = base + "_ext.pb_test.go"
+	}
+	outPath := filepath.Join(outDir, outName)
 
 	var b strings.Builder
 	p := func(args ...interface{}) {

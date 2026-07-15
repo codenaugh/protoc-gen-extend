@@ -15,21 +15,10 @@ func generateExtensions(gen *protogen.Plugin, file *protogen.File, sidecarRoot s
 	protoPath := file.Proto.GetName()
 	protoDir := filepath.Dir(protoPath)
 
-	// The sidecar file convention: <name>.proto.ext.go sits next to <name>.proto.
+	// The sidecar file conventions: <name>.proto.ext.go (production
+	// extensions) and <name>.proto.ext_test.go (tests, emitted as a
+	// _test file in the generated package) sit next to <name>.proto.
 	baseName := strings.TrimSuffix(filepath.Base(protoPath), ".proto")
-	sidecarName := baseName + ".proto.ext.go"
-
-	// Search for the sidecar file. protoc doesn't give us the absolute path
-	// to the proto file directly, so we search proto_path entries, the
-	// sidecar_root option, and the current working directory.
-	sidecarPath, err := findSidecar(protoDir, sidecarName, sidecarRoot)
-	if err != nil {
-		return err
-	}
-	if sidecarPath == "" {
-		// No sidecar file found — nothing to do.
-		return nil
-	}
 
 	// Build the set of known message names from the proto file.
 	knownMessages := make(map[string]bool)
@@ -40,17 +29,38 @@ func generateExtensions(gen *protogen.Plugin, file *protogen.File, sidecarRoot s
 		addNestedMessages(knownMessages, msg)
 	}
 
-	content, err := parseSidecarFile(sidecarPath, knownMessages, messageNames, file.Proto.GetName())
-	if err != nil {
-		return fmt.Errorf("parsing sidecar %s: %w", sidecarPath, err)
-	}
-	if len(content.blocks) == 0 {
-		return nil
+	kinds := []struct {
+		sidecarName string
+		outName     string
+	}{
+		{baseName + ".proto.ext.go", file.GeneratedFilenamePrefix + "_ext.pb.go"},
+		{baseName + ".proto.ext_test.go", file.GeneratedFilenamePrefix + "_ext.pb_test.go"},
 	}
 
-	outName := file.GeneratedFilenamePrefix + "_ext.pb.go"
-	g := gen.NewGeneratedFile(outName, file.GoImportPath)
-	writeExtFile(g.P, sidecarName, string(file.GoPackageName), content)
+	for _, k := range kinds {
+		// Search for the sidecar file. protoc doesn't give us the absolute
+		// path to the proto file directly, so we search proto_path entries,
+		// the sidecar_root option, and the current working directory.
+		sidecarPath, err := findSidecar(protoDir, k.sidecarName, sidecarRoot)
+		if err != nil {
+			return err
+		}
+		if sidecarPath == "" {
+			// No sidecar file found — nothing to do.
+			continue
+		}
+
+		content, err := parseSidecarFile(sidecarPath, knownMessages, messageNames, file.Proto.GetName())
+		if err != nil {
+			return fmt.Errorf("parsing sidecar %s: %w", sidecarPath, err)
+		}
+		if len(content.blocks) == 0 {
+			continue
+		}
+
+		g := gen.NewGeneratedFile(k.outName, file.GoImportPath)
+		writeExtFile(g.P, k.sidecarName, string(file.GoPackageName), content)
+	}
 
 	return nil
 }

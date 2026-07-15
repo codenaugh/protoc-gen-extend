@@ -103,7 +103,7 @@ directory (`$GOBIN` or `$GOPATH/bin`) must be on PATH, or pass
 
 ## Sidecar File Convention
 
-- Named `<name>.proto.ext.go` to match `<name>.proto`
+- Named `<name>.proto.ext.go` to match `<name>.proto`; tests go in `<name>.proto.ext_test.go`, emitted as a `_test.go` file in the generated package (so `go test` covers the extensions without importing `testing` into production output)
 - Must have a `//go:build ignore` tag so it's not compiled in place
 - Package name is rewritten to match the generated output
 - Receiver types are validated against messages in the proto file
